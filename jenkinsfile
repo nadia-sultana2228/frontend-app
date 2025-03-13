@@ -9,7 +9,9 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'main', url: 'https://github.com/nadia-sultana2228/frontend-app.git'
+                git branch: 'main', 
+                    url: 'https://github.com/nadia-sultana2228/frontend-app.git', 
+                    credentialsId: 'github-credentials'  // Add your credentials ID here
             }
         }
 
@@ -19,20 +21,21 @@ pipeline {
             }
         }
 
-        stage('Build Frontend') {
+        stage('Build') {
             steps {
                 sh 'npm run build'
             }
         }
 
-        stage('Deploy to Server') {
+        stage('Deploy to Nginx') {
             steps {
-                sh '''
-                ssh ${USER}@${SERVER_IP} 'sudo rm -rf /var/www/frontend-app/build/*'
-                scp -r build/* ${USER}@${SERVER_IP}:/var/www/frontend-app/
-                scp nginx/default.conf ${USER}@${SERVER_IP}:/etc/nginx/sites-available/default
-                ssh ${USER}@${SERVER_IP} 'sudo systemctl restart nginx'
-                '''
+                sh """
+                ssh -o StrictHostKeyChecking=no $USER@$SERVER_IP '
+                sudo rm -rf /var/www/html/*
+                sudo cp -r dist/* /var/www/html/
+                sudo systemctl restart nginx
+                '
+                """
             }
         }
     }
