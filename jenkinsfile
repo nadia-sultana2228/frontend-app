@@ -1,0 +1,39 @@
+pipeline {
+    agent any
+
+    environment {
+        SERVER_IP = "13.203.74.90"
+        USER = "ubuntu"
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'main', url: 'https://github.com/nadia-sultana2228/frontend-app.git'
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh 'npm install'
+            }
+        }
+
+        stage('Build Frontend') {
+            steps {
+                sh 'npm run build'
+            }
+        }
+
+        stage('Deploy to Server') {
+            steps {
+                sh '''
+                ssh ${USER}@${SERVER_IP} 'sudo rm -rf /var/www/frontend-app/build/*'
+                scp -r build/* ${USER}@${SERVER_IP}:/var/www/frontend-app/
+                scp nginx/default.conf ${USER}@${SERVER_IP}:/etc/nginx/sites-available/default
+                ssh ${USER}@${SERVER_IP} 'sudo systemctl restart nginx'
+                '''
+            }
+        }
+    }
+}
